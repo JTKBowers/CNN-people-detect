@@ -1,3 +1,12 @@
+'''
+Routines to handle the INRIA pedestrian dataset.
+
+The dataset can be acquired from http://pascal.inrialpes.fr/data/human/
+
+It does not appear to have a license, and is provided:
+'"AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.'
+'''
+
 import os, re
 
 #from Datasets.Dataset import *
@@ -59,7 +68,7 @@ def INRIADataset(path, subdir):
 
 def loadINRIA(path):
     '''
-    Load the INRIA dataset, just as downloaded from http://pascal.inrialpes.fr/data/human/
+    Load the INRIA dataset. Call this!
 
     Note that this loader skips the normalised images due to them being incompatible with recent versions of libpng.
         (see http://stackoverflow.com/questions/25543930/libpng-error-idat-invalid-distance-too-far-back-in-mac-osx-10-9)
