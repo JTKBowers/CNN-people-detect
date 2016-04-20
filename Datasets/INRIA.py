@@ -49,6 +49,7 @@ def get_bboxes(metadata_path):
             bbox_coords_regex = '\(([\d]+), ([\d]+)\) \- \(([\d]+), ([\d]+)\)'
             bbox_match = re.match(bbox_coords_regex, metadata[key])
             if bbox_match:
+                bbox = normalise_bbox(bbox_match.groups(), input_width, input_height) # min_x, min_y, max_x, max_y
                 bbox = tuple(int(coord)/length for coord, length in zip(bbox_match.groups(), [input_width, input_height, input_width, input_height])) # min_x, min_y, max_x, max_y
                 bboxes.append(bbox)
             else:

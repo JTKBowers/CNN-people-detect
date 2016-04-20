@@ -3,6 +3,13 @@ import os
 import cv2
 import numpy as np
 
+def normalise_bbox(bbox_str_tuple, input_width, input_height):
+    '''
+    Take a tuple of bounding box coordinate strings, convert them to ints, and normalise to the unit image.
+    '''
+    size_array = [input_width, input_height, input_width, input_height]
+    return tuple(int(coord)/length for coord, length in zip(bbox_str_tuple, size_array)) # min_x, min_y, max_x, max_y
+
 def render_bboxes_image(bboxes, im_w, im_h):
     '''
     Render the bounding boxes (bboxes) on an image of size (output_width, output_height),
@@ -13,7 +20,6 @@ def render_bboxes_image(bboxes, im_w, im_h):
     for min_x, min_y, max_x, max_y in bboxes:
         pt1 = (int(min_x*im_w), int(min_y*im_h))
         pt2 = (int(max_x*im_w), int(max_y*im_h))
-        print(pt1, pt2)
         cv2.rectangle(output_image,pt1, pt2, 255, cv2.FILLED)
     return output_image
 
