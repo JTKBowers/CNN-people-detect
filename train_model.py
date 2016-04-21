@@ -3,8 +3,15 @@ Adapted from https://www.tensorflow.org/versions/r0.8/tutorials/mnist/pros/index
 
 Trains a convolutional neural network to detect people. The training set used is the INRIA person dataset (http://pascal.inrialpes.fr/data/human/).
 '''
-from INRIADataset import INRIADataset
+
+# import IN THIS ORDER - otherwise cv2 gets loaded after tensorflow,
+# and tensorflow loads an incompatible internal version of libpng
+# https://github.com/tensorflow/tensorflow/issues/1924
+from Datasets.tud import loadTUD
+
 import tensorflow as tf
+
+
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
@@ -23,12 +30,12 @@ def max_pool_2x2(x):
 
 def build_layer_1(x, im_w, im_h):
     patch_size = 5
-    input_channels = 1
+    input_channels = 3
     output_channels = 32 #features computed by first layer for each patch
     W_conv1 = weight_variable([patch_size, patch_size, input_channels, output_channels])
     b_conv1 = bias_variable([output_channels])
 
-    num_colour_channels = 1 #change later
+    num_colour_channels = 3
     x_image = tf.reshape(x, [-1,im_w,im_h,num_colour_channels])
     h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
@@ -62,19 +69,22 @@ def dropout(h_fc1):
     return keep_prob, h_fc1_drop
 
 def build_readout_layer(h_fc1_drop):
-    W_fc2 = weight_variable([1024, 10])
-    b_fc2 = bias_variable([10])
+    W_fc2 = weight_variable([1024, 100])
+    b_fc2 = bias_variable([100])
 
     y_conv=tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
     return y_conv
+
 if __name__ == '__main__':
-    inria = INRIADataset('/mnt/pedestrians/INRIA/INRIAPerson')
+    tud = loadTUD('/mnt/pedestrians/tud/tud-pedestrians')
 
+    nn_im_w = 28
+    nn_im_h = 28
     with tf.Session() as sess:
-        x = tf.placeholder(tf.float32, shape=[None, 784])
-        y_ = tf.placeholder(tf.float32, shape=[None, 10])
+        x = tf.placeholder(tf.float32, shape=[None, nn_im_w*nn_im_h*3])
+        y_ = tf.placeholder(tf.float32, shape=[None, 100])
 
-        h_pool1 = build_layer_1(x, 28, 28)
+        h_pool1 = build_layer_1(x, nn_im_w, nn_im_h)
         h_pool2 = build_layer_2(h_pool1)
         h_fc1 = fully_connected_layer(h_pool2)
         keep_prob, h_fc1_drop = dropout(h_fc1)
@@ -85,20 +95,20 @@ if __name__ == '__main__':
         correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         sess.run(tf.initialize_all_variables())
-        for i in range(100):
-          batch = mnist.train.next_batch(50)
-          if i%100 == 0:
+
+
+        for batch_no, batch in enumerate(tud.train.iter_batches(nn_im_w, nn_im_h, 10,10)):
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch[0], y_: batch[1], keep_prob: 1.0})
-            print("step %d, training accuracy %g"%(i, train_accuracy))
-          train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+            print(train_accuracy)
+            print("step %d, training accuracy %g"%(batch_no, train_accuracy))
+            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
         cum_accuracy = 0
-        batch_size = 50
-        num_batches = mnist.test.num_examples//batch_size
-        for _ in range(num_batches):
-            batch = mnist.test.next_batch(50)
+        num_batches = 0
+        for batch in tud.test.iter_batches(nn_im_w, nn_im_h,10,10):
             cum_accuracy += accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1], keep_prob: 1.0})
+            num_batches += 1
         mean_accuracy = cum_accuracy/num_batches
         print("test accuracy %g"%mean_accuracy)
