@@ -83,6 +83,13 @@ class Dataset:
                    y.reshape((1, output_row_size))
     def __len__(self):
         return len(self.images)
+    def __add__(self, other):
+        new = Dataset([])
+        new.images.extend(self.images)
+        new.images.extend(other.images)
+        return new
+    def __iadd__(self, other):
+        self.images.extend(other.images)
 
 class DatasetGroup:
     def __init__(self, test, train, validation=None):
@@ -98,3 +105,10 @@ class DatasetGroup:
         self.test = test
         self.train = train
         self.validation = validation
+    def __add__(self, other):
+        return DatasetGroup(self.test + other.test, self.train + other.train)
+    def __iadd__(self, other):
+        self.test += other.test
+        self.train += other.train
+        if self.validation is not None and other.validation is not None:
+            self.validation += other.validation

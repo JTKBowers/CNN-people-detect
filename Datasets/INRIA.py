@@ -10,7 +10,7 @@ It does not appear to have a license, and is provided:
 import os, re
 
 #from Datasets.Dataset import *
-from Dataset import *
+from .Dataset import *
 
 def load_pascal_annotation(path):
     attributes = {}
