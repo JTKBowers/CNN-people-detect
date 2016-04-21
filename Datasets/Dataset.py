@@ -41,22 +41,36 @@ class Dataset:
     def add_image(self, image_tuple):
         self.images.append(image_tuple)
     def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50):
-        batch = ([],[])
-        for image_path, bboxes in self.images:
-            if len(batch) == batch_size:
-                yield batch
-                batch = ([],[])
+        input_row_size = im_w*im_h*3
+        output_row_size = output_w*output_height
+        input_batch = np.empty((batch_size, input_row_size), dtype=np.float32) # 3 elements per pixel
+        output_batch = np.empty((batch_size, output_row_size), dtype=np.float32)
 
+        batch_index = 0
+        for image_path, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
                 raise Exception('Image did not load!' + image_path)
             im = cv2.resize(cv2.imread(image_path), (im_w, im_h))
+            input_batch[batch_index] = im.reshape((1, input_row_size))
+
             y = render_bboxes_image(bboxes, output_w, output_height)
-            batch[0].append(im)
-            batch[1].append(y)
-        if batch != ([],[]):
-            yield batch
+            output_batch[batch_index]= y.reshape((1, output_row_size))
+
+            batch_index += 1
+            if batch_index >= batch_size:
+                batch_index = 0
+                yield input_batch, output_batch
+
+        # If there are any remaining entries
+        if batch_index != 0:
+            #trim the arrays and yield
+            yield np.resize( input_batch, (batch_index, input_row_size)),\
+                  np.resize(output_batch, (batch_index, output_row_size))
+
     def iter(self, im_w, im_h, output_w, output_height):
+        input_row_size = im_w*im_h*3
+        output_row_size = output_w*output_height
         for image_path, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
@@ -65,7 +79,8 @@ class Dataset:
             y = render_bboxes_image(bboxes, output_w, output_height)
 
             #im = cv2.bitwise_and(im, im, mask=255-y) # hide annotated people
-            yield (im, y)
+            yield im.reshape((1, input_row_size)),\
+                   y.reshape((1, output_row_size))
     def __len__(self):
         return len(self.images)
 
