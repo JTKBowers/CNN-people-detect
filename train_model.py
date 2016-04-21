@@ -7,11 +7,11 @@ Trains a convolutional neural network to detect people. The training set used is
 # import IN THIS ORDER - otherwise cv2 gets loaded after tensorflow,
 # and tensorflow loads an incompatible internal version of libpng
 # https://github.com/tensorflow/tensorflow/issues/1924
-from Datasets.tud import loadTUD
-
+import cv2
 import tensorflow as tf
 
-
+from Datasets.tud import loadTUD
+from Datasets.INRIA import loadINRIA
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
@@ -52,9 +52,8 @@ def build_layer_2(h_pool1):
     h_pool2 = max_pool_2x2(h_conv2)
     return h_pool2
 
-def fully_connected_layer(h_pool2):
+def fully_connected_layer(h_pool2, im_w, im_h):
     num_neurons = 1024
-    im_w = im_h = 7
     input_channels = 64
     W_fc1 = weight_variable([im_w * im_h * input_channels, num_neurons])
     b_fc1 = bias_variable([num_neurons])
@@ -76,28 +75,34 @@ def build_readout_layer(h_fc1_drop):
     return y_conv
 
 if __name__ == '__main__':
-    tud = loadTUD('/mnt/pedestrians/tud/tud-pedestrians')
+    tud = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
+          loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
+          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
+    print(len(tud.train), len(tud.test))
 
-    nn_im_w = 28
-    nn_im_h = 28
+    nn_im_w = 100
+    nn_im_h = 100
+    nn_out_w = 10
+    nn_out_h = 10
     with tf.Session() as sess:
-        x = tf.placeholder(tf.float32, shape=[None, nn_im_w*nn_im_h*3])
-        y_ = tf.placeholder(tf.float32, shape=[None, 100])
+        with tf.device('/cpu:0'):
+            x = tf.placeholder(tf.float32, shape=[None, nn_im_w*nn_im_h*3])
+            y_ = tf.placeholder(tf.float32, shape=[None, nn_out_w*nn_out_h])
 
-        h_pool1 = build_layer_1(x, nn_im_w, nn_im_h)
-        h_pool2 = build_layer_2(h_pool1)
-        h_fc1 = fully_connected_layer(h_pool2)
-        keep_prob, h_fc1_drop = dropout(h_fc1)
-        y_conv = build_readout_layer(h_fc1_drop) #vector of classes - length 10
+            h_pool1 = build_layer_1(x, nn_im_w, nn_im_h)
+            h_pool2 = build_layer_2(h_pool1)
+            h_fc1 = fully_connected_layer(h_pool2, nn_im_w//4, nn_im_h//4) #/4 because of two 2x2 pooling layers
+            keep_prob, h_fc1_drop = dropout(h_fc1)
+            y_conv = build_readout_layer(h_fc1_drop) #vector of classes - length 10
 
-        cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
-        train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-        correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
+            train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+            correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         sess.run(tf.initialize_all_variables())
 
 
-        for batch_no, batch in enumerate(tud.train.iter_batches(nn_im_w, nn_im_h, 10,10)):
+        for batch_no, batch in enumerate(tud.train.iter_batches(nn_im_w, nn_im_h, nn_out_w,nn_out_h)):
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch[0], y_: batch[1], keep_prob: 1.0})
             print(train_accuracy)
@@ -106,7 +111,7 @@ if __name__ == '__main__':
 
         cum_accuracy = 0
         num_batches = 0
-        for batch in tud.test.iter_batches(nn_im_w, nn_im_h,10,10):
+        for batch in tud.test.iter_batches(nn_im_w, nn_im_h,nn_out_w,nn_out_h):
             cum_accuracy += accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1], keep_prob: 1.0})
             num_batches += 1
