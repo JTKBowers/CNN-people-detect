@@ -11,7 +11,7 @@ They have an unknown license, but are commonly cited through academia (so should
 
 import os, glob, re, random
 
-from Dataset import *
+from .Dataset import *
 
 def read_idl(path, idl_path):
     with open(idl_path) as idl:
@@ -49,8 +49,8 @@ if __name__ == '__main__':
     grp = loadTUD('/mnt/pedestrians/tud/tud-pedestrians')
 
     cv2.namedWindow('Input')
-    #cv2.namedWindow('Output')
-    for im, y in grp.test.iter(256,256):
+    cv2.namedWindow('Output')
+    for im, y in grp.test.iter(256,256, 10, 10):
         cv2.imshow('Input',im)
-        #cv2.imshow('Output',y)
+        cv2.imshow('Output',y)
         cv2.waitKey()

@@ -40,7 +40,7 @@ class Dataset:
         self.images = list(image_iterator)
     def add_image(self, image_tuple):
         self.images.append(image_tuple)
-    def iter_batches(self, im_w, im_h, batch_size=50):
+    def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50):
         batch = ([],[])
         for image_path, bboxes in self.images:
             if len(batch) == batch_size:
@@ -51,19 +51,23 @@ class Dataset:
             if im is None:
                 raise Exception('Image did not load!' + image_path)
             im = cv2.resize(cv2.imread(image_path), (im_w, im_h))
-            y = render_bboxes_image(bboxes, im_w, im_h)
+            y = render_bboxes_image(bboxes, output_w, output_height)
             batch[0].append(im)
             batch[1].append(y)
-    def iter(self, im_w, im_h):
+        if batch != ([],[]):
+            yield batch
+    def iter(self, im_w, im_h, output_w, output_height):
         for image_path, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
                 raise Exception('Image did not load!' + image_path)
             im = cv2.resize(cv2.imread(image_path), (im_w, im_h))
-            y = render_bboxes_image(bboxes, im_w, im_h)
+            y = render_bboxes_image(bboxes, output_w, output_height)
 
             #im = cv2.bitwise_and(im, im, mask=255-y) # hide annotated people
             yield (im, y)
+    def __len__(self):
+        return len(self.images)
 
 class DatasetGroup:
     def __init__(self, test, train, validation=None):
