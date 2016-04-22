@@ -21,8 +21,8 @@ def read_idl(path, idl_path):
                 filename, bboxes_raw = match.groups()
                 bboxes = []
                 for bbox_match in re.finditer('\((\d+), (\d+), (\d+), (\d+)\)', bboxes_raw):
-                    bboxes.append(normalise_bbox(bbox_match.groups(), 720, 576)) #fix image dimensions?
-                yield os.path.join(path, filename), bboxes
+                    bboxes.append(cast_bbox(bbox_match.groups())) #fix image dimensions?
+                yield os.path.join(path, filename), 0, 0, bboxes #image width and height are set to 0 so that they are calculated later.
 
 def TUD_iterator(path):
     # find all .idl files in the directory.
@@ -43,14 +43,3 @@ def loadTUD(path, test_train_segmentation_ratio=0.7):
     train_set = Dataset(tud_examples[:cut])
     test_set = Dataset(tud_examples[cut:])
     return DatasetGroup(test_set,train_set)
-
-
-if __name__ == '__main__':
-    grp = loadTUD('/mnt/pedestrians/tud/tud-pedestrians')
-
-    cv2.namedWindow('Input')
-    cv2.namedWindow('Output')
-    for im, y in grp.test.iter(256,256, 10, 10):
-        cv2.imshow('Input',im)
-        cv2.imshow('Output',y)
-        cv2.waitKey()

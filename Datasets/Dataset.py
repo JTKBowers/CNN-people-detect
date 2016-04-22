@@ -3,23 +3,24 @@ import os
 import cv2
 import numpy as np
 
-def normalise_bbox(bbox_str_tuple, input_width, input_height):
+def cast_bbox(bbox_str_tuple):
     '''
-    Take a tuple of bounding box coordinate strings, convert them to ints, and normalise to the unit image.
+    Take a tuple of bounding box coordinate strings and convert them to ints.
     '''
-    size_array = [input_width, input_height, input_width, input_height]
-    return tuple(int(coord)/length for coord, length in zip(bbox_str_tuple, size_array)) # min_x, min_y, max_x, max_y
+    return tuple(int(coord) for coord in bbox_str_tuple) # min_x, min_y, max_x, max_y
 
-def render_bboxes_image(bboxes, im_w, im_h):
+def render_bboxes_image(bboxes, output_width, output_height, input_width, input_height):
     '''
     Render the bounding boxes (bboxes) on an image of size (output_width, output_height),
-    where the bounding box coordinates normalised into a space ranging from (0,0) to (1,1).
+    where the bounding box coordinates exist between (0,0) and (input_width, input_height).
     '''
-    output_image = np.zeros((im_w,im_h), dtype=np.uint8)
+    output_image = np.zeros((output_height, output_width), dtype=np.uint8)
 
+    w_scale = output_width/input_width
+    h_scale = output_height/input_height
     for min_x, min_y, max_x, max_y in bboxes:
-        pt1 = (int(min_x*im_w), int(min_y*im_h))
-        pt2 = (int(max_x*im_w), int(max_y*im_h))
+        pt1 = (int(min_x*w_scale), int(min_y*h_scale))
+        pt2 = (int(max_x*w_scale), int(max_y*h_scale))
         cv2.rectangle(output_image,pt1, pt2, 255, cv2.FILLED)
     return output_image
 
@@ -27,10 +28,11 @@ class Dataset:
     def __init__(self, image_iterator, lazy_load=True, lazy_output_gen=True):
         '''
         Iterate through the image_iterator, which outputs tuples of the form
-            (image path, [bounding boxes])
+            (image path, image_width, image_height, [bounding boxes])
         where bounding boxes are of the form
             (min_x, min_y, max_x, max_y).
         For each image, add it to the dataset to be loaded later.
+        If image width and hight are 0, they will be calculated from the image itself.
 
         Parameters:
         - image_iterator: as above.
@@ -47,14 +49,17 @@ class Dataset:
         output_batch = np.empty((batch_size, output_row_size), dtype=np.float32)
 
         batch_index = 0
-        for image_path, bboxes in self.images:
+        for image_path, image_width, image_height, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
                 raise Exception('Image did not load!' + image_path)
-            im = cv2.resize(cv2.imread(image_path), (im_w, im_h))
+            if image_width == 0 or image_height == 0:
+                image_height, image_width, _ = im.shape
+            im = cv2.resize(im, (im_w, im_h))
             input_batch[batch_index] = im.reshape((1, input_row_size))
 
-            y = render_bboxes_image(bboxes, output_w, output_height)
+
+            y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
             output_batch[batch_index]= y.reshape((1, output_row_size))
 
             batch_index += 1
@@ -71,14 +76,18 @@ class Dataset:
     def iter(self, im_w, im_h, output_w, output_height):
         input_row_size = im_w*im_h*3
         output_row_size = output_w*output_height
-        for image_path, bboxes in self.images:
+        for image_path, image_width, image_height, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
                 raise Exception('Image did not load!' + image_path)
-            im = cv2.resize(cv2.imread(image_path), (im_w, im_h))
-            y = render_bboxes_image(bboxes, output_w, output_height)
+            if image_width == 0 or image_height == 0:
+                image_height, image_width, _ = im.shape
 
-            #im = cv2.bitwise_and(im, im, mask=255-y) # hide annotated people
+            im = cv2.resize(im, (im_w, im_h))
+
+            y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
+
+            im = cv2.bitwise_and(im, im, mask=255-cv2.resize(y, (im_w, im_h))) # hide annotated people
             yield im.reshape((1, input_row_size)),\
                    y.reshape((1, output_row_size))
     def __len__(self):

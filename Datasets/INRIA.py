@@ -49,19 +49,18 @@ def get_bboxes(metadata_path):
             bbox_coords_regex = '\(([\d]+), ([\d]+)\) \- \(([\d]+), ([\d]+)\)'
             bbox_match = re.match(bbox_coords_regex, metadata[key])
             if bbox_match:
-                bbox = normalise_bbox(bbox_match.groups(), input_width, input_height) # min_x, min_y, max_x, max_y
-                bbox = tuple(int(coord)/length for coord, length in zip(bbox_match.groups(), [input_width, input_height, input_width, input_height])) # min_x, min_y, max_x, max_y
+                bbox = cast_bbox(bbox_match.groups()) # min_x, min_y, max_x, max_y
                 bboxes.append(bbox)
             else:
                 print('Syntax error?: BBOX coordinates regex ({}) does not match {}'.format(bbox_coords_regex, metadata[key]))
-    return metadata['Image filename'][1:-1], bboxes
+    return metadata['Image filename'][1:-1], input_width, input_height, bboxes
 
 def INRIADataset(path, subdir):
     # Iterate over annotation files, generate their bounding boxes, and yield them
     for annotation_filename in os.listdir(os.path.join(path, subdir, 'annotations')):
-         im_path, bboxes = get_bboxes(os.path.join(path, subdir, 'annotations', annotation_filename))
+         im_path, input_width, input_height, bboxes = get_bboxes(os.path.join(path, subdir, 'annotations', annotation_filename))
          im_path = os.path.join(path, im_path)
-         yield im_path, bboxes
+         yield im_path, input_width, input_height, bboxes
          break
     # Now yield negative examples
     for neg in os.listdir(os.path.join(path, subdir, 'neg')):
