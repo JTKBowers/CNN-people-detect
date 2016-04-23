@@ -75,10 +75,13 @@ def build_readout_layer(h_fc1_drop):
     return y_conv
 
 if __name__ == '__main__':
-    tud = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
+    combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
           loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
+          loadTUD('/mnt/pedestrians/tud/train-400') + \
+          loadTUD('/mnt/pedestrians/tud/train-210') + \
           loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
-    print(len(tud.train), len(tud.test))
+    print(len(combined_dataset.train), 'training examples.')
+    print(len(combined_dataset.test), 'testing examples.')
 
     nn_im_w = 100
     nn_im_h = 100
@@ -102,7 +105,7 @@ if __name__ == '__main__':
         sess.run(tf.initialize_all_variables())
 
 
-        for batch_no, batch in enumerate(tud.train.iter_batches(nn_im_w, nn_im_h, nn_out_w,nn_out_h)):
+        for batch_no, batch in enumerate(combined_dataset.train.iter_batches(nn_im_w, nn_im_h, nn_out_w,nn_out_h)):
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch[0], y_: batch[1], keep_prob: 1.0})
             print(train_accuracy)
@@ -111,7 +114,7 @@ if __name__ == '__main__':
 
         cum_accuracy = 0
         num_batches = 0
-        for batch in tud.test.iter_batches(nn_im_w, nn_im_h,nn_out_w,nn_out_h):
+        for batch in combined_dataset.test.iter_batches(nn_im_w, nn_im_h,nn_out_w,nn_out_h):
             cum_accuracy += accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1], keep_prob: 1.0})
             num_batches += 1

@@ -64,7 +64,7 @@ def INRIADataset(path, subdir):
          break
     # Now yield negative examples
     for neg in os.listdir(os.path.join(path, subdir, 'neg')):
-        yield os.path.join(path, subdir, 'neg', neg),[]
+        yield os.path.join(path, subdir, 'neg', neg),0,0,[]
 
 def loadINRIA(path):
     '''
