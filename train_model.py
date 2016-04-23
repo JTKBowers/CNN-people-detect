@@ -77,8 +77,7 @@ def build_readout_layer(h_fc1_drop, output_size):
 if __name__ == '__main__':
     combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
           loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
-          loadTUD('/mnt/pedestrians/tud/train-400') + \
-          loadTUD('/mnt/pedestrians/tud/train-210') + \
+          loadTUD('/mnt/pedestrians/tud/TUD-Brussels') + \
           loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
     print(len(combined_dataset.train), 'training examples.')
     print(len(combined_dataset.test), 'testing examples.')
