@@ -87,7 +87,6 @@ class Dataset:
 
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
 
-            im = cv2.bitwise_and(im, im, mask=255-cv2.resize(y, (im_w, im_h))) # hide annotated people
             yield im.reshape((1, input_row_size)),\
                    y.reshape((1, output_row_size))
     def __len__(self):
