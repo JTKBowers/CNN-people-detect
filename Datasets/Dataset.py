@@ -42,7 +42,7 @@ class Dataset:
         self.images = list(image_iterator)
     def add_image(self, image_tuple):
         self.images.append(image_tuple)
-    def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50):
+    def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50, normalize=True):
         input_row_size = im_w*im_h*3
         output_row_size = output_w*output_height
         input_batch = np.empty((batch_size, input_row_size), dtype=np.float32) # 3 elements per pixel
@@ -56,10 +56,15 @@ class Dataset:
             if image_width == 0 or image_height == 0:
                 image_height, image_width, _ = im.shape
             im = cv2.resize(im, (im_w, im_h))
-            input_batch[batch_index] = im.reshape((1, input_row_size))
-
 
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
+
+            #normalize
+            if normalize:
+                im = im.astype(np.float32)/255
+                y = y.astype(np.float32)/255
+
+            input_batch[batch_index] = im.reshape((1, input_row_size))
             output_batch[batch_index]= y.reshape((1, output_row_size))
 
             batch_index += 1
@@ -73,7 +78,7 @@ class Dataset:
             yield np.resize( input_batch, (batch_index, input_row_size)),\
                   np.resize(output_batch, (batch_index, output_row_size))
 
-    def iter(self, im_w, im_h, output_w, output_height):
+    def iter(self, im_w, im_h, output_w, output_height, normalize=True):
         input_row_size = im_w*im_h*3
         output_row_size = output_w*output_height
         for image_path, image_width, image_height, bboxes in self.images:
@@ -86,6 +91,11 @@ class Dataset:
             im = cv2.resize(im, (im_w, im_h))
 
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
+
+            #normalize
+            if normalize:
+                im = im.astype(np.float32)/255
+                y = y.astype(np.float32)/255
 
             yield im.reshape((1, input_row_size)),\
                    y.reshape((1, output_row_size))
