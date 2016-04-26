@@ -61,7 +61,7 @@ def INRIADataset(path, subdir):
          im_path, input_width, input_height, bboxes = get_bboxes(os.path.join(path, subdir, 'annotations', annotation_filename))
          im_path = os.path.join(path, im_path)
          yield im_path, input_width, input_height, bboxes
-         break
+
     # Now yield negative examples
     for neg in os.listdir(os.path.join(path, subdir, 'neg')):
         yield os.path.join(path, subdir, 'neg', neg),0,0,[]
@@ -75,7 +75,7 @@ def loadINRIA(path):
     '''
     test_set = Dataset(INRIADataset(path,'Test'))
     train_set = Dataset(INRIADataset(path,'Train'))
-    return DatasetGroup(test_set,train_set)
+    return DatasetGroup(test_set, train_set)
 
 if __name__ == '__main__':
     grp = loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson/')

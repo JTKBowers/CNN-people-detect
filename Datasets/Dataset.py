@@ -1,4 +1,4 @@
-import os
+import os, random
 
 import cv2
 import numpy as np
@@ -108,6 +108,14 @@ class Dataset:
         return new
     def __iadd__(self, other):
         self.images.extend(other.images)
+    def shuffle(self):
+        random.shuffle(self.images)
+    @property
+    def num_negative_examples(self):
+        return sum(map(lambda x: x[3]==[], self.images))
+    @property
+    def num_positive_examples(self):
+        return sum(map(lambda x: x[3]!=[], self.images))
 
 class DatasetGroup:
     def __init__(self, test, train, validation=None):
@@ -130,3 +138,8 @@ class DatasetGroup:
         self.train += other.train
         if self.validation is not None and other.validation is not None:
             self.validation += other.validation
+    def shuffle(self):
+        self.test.shuffle()
+        self.train.shuffle()
+        if self.validation is not None:
+            self.validation.shuffle()

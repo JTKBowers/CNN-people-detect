@@ -5,7 +5,16 @@ from Datasets.tud import loadTUD
 from Datasets.INRIA import loadINRIA
 
 if __name__ == '__main__':
-    grp = loadTUD('/mnt/pedestrians/tud/TUD-Brussels')
+    combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
+          loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
+          loadTUD('/mnt/pedestrians/tud/TUD-Brussels') + \
+          loadTUD('/mnt/pedestrians/tud/train-210') + \
+          loadTUD('/mnt/pedestrians/tud/train-400') + \
+          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
+
+    print(len(combined_dataset.train), 'examples')
+    print(combined_dataset.train.num_positive_examples, 'positive examples')
+    print(combined_dataset.train.num_negative_examples, 'negative examples')
 
     cover_people = True
 
@@ -13,7 +22,7 @@ if __name__ == '__main__':
     cv2.namedWindow('Output')
     input_width, input_height = 512, 512
     output_width, output_height = 100, 100
-    for im, y in grp.test.iter(input_width,input_height, output_width, output_height):
+    for im, y in combined_dataset.test.iter(input_width,input_height, output_width, output_height, normalize=False):
         im = im.reshape((input_width,input_height, 3)).astype(np.uint8)
         y = y.reshape((output_height,output_width)).astype(np.uint8)
 
