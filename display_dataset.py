@@ -3,6 +3,7 @@ import numpy as np
 
 from Datasets.tud import loadTUD
 from Datasets.INRIA import loadINRIA
+from Datasets.Zurich import loadZurich
 
 if __name__ == '__main__':
     combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
@@ -10,7 +11,8 @@ if __name__ == '__main__':
           loadTUD('/mnt/pedestrians/tud/TUD-Brussels') + \
           loadTUD('/mnt/pedestrians/tud/train-210') + \
           loadTUD('/mnt/pedestrians/tud/train-400') + \
-          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
+          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson') + \
+          loadZurich('/mnt/pedestrians/zurich')
 
     print(len(combined_dataset.train), 'examples')
     print(combined_dataset.train.num_positive_examples, 'positive examples')

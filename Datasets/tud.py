@@ -31,7 +31,7 @@ def TUD_iterator(path):
 
 def loadTUD(path, test_train_segmentation_ratio=0.7):
     '''
-    Loads a INRIA dataset. Call this!
+    Loads a TUD dataset. Call this!
 
     test_train_segmentation_ratio is the proportion of the images that are part of the training set.
     '''
