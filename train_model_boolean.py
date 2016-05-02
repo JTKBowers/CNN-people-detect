@@ -51,7 +51,7 @@ def build_layer_2(h_pool1):
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
-    return h_pool2
+    return h_pool2, W_conv2, b_conv2
 
 def build_layer_3(h_pool1):
     patch_size = 5
@@ -62,7 +62,7 @@ def build_layer_3(h_pool1):
 
     h_conv3 = tf.nn.relu(conv2d(h_pool1, W_conv3) + b_conv3)
     h_pool3 = max_pool_2x2(h_conv3)
-    return h_pool3
+    return h_pool3, W_conv3, b_conv3
 
 def fully_connected_layer(h_pool2, im_w, im_h):
     num_neurons = 1024
@@ -72,16 +72,16 @@ def fully_connected_layer(h_pool2, im_w, im_h):
 
     h_pool2_flat = tf.reshape(h_pool2, [-1, im_w * im_h * input_channels])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-    return h_fc1
+    return h_fc1, W_fc1, b_fc1
 
 def dropout(h_fc1):
     keep_prob = tf.placeholder(tf.float32)
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
     return keep_prob, h_fc1_drop
 
-def build_readout_layer(h_fc1_drop, output_size):
-    W_fc2 = weight_variable([1024, output_size])
-    b_fc2 = bias_variable([output_size])
+def build_readout_layer(h_fc1_drop):
+    W_fc2 = weight_variable([1024, 1])
+    b_fc2 = bias_variable([1])
 
     #y_conv=tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
     #y_conv=tf.matmul(h_fc1_drop, W_fc2) + b_fc2
@@ -89,88 +89,105 @@ def build_readout_layer(h_fc1_drop, output_size):
     y_raw=tf.matmul(h_fc1_drop, W_fc2) + b_fc2
     y_conv = tf.nn.sigmoid(y_raw)
     #y_conv = (y_raw + 1)/2
-    return y_conv
+    return y_conv, W_fc2, b_fc2
+
 
 if __name__ == '__main__':
-    combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
-          loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
-          loadTUD('/mnt/pedestrians/tud/TUD-Brussels') + \
-          loadTUD('/mnt/pedestrians/tud/train-210') + \
-          loadTUD('/mnt/pedestrians/tud/train-400') + \
-          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson')
-    print(len(combined_dataset.train), 'training examples.')
-    print(len(combined_dataset.test), 'testing examples.')
+    combined_dataset = loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-campus-sequence') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-Brussels') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-210') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-400') + \
+          loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson')
+    train_pos = combined_dataset.train.num_positive_examples
+    train_neg = combined_dataset.train.num_negative_examples
+    print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
+    print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_dataset.test.num_positive_examples, combined_dataset.test.num_negative_examples))
 
+    # Move examples so the training set is 50% positive examples
+    if train_pos > train_neg:
+        combined_dataset.shuffle()
+        num_to_remove = train_pos-train_neg
+        print("Removing", num_to_remove, "positive examples")
+        cutoff_index = [i for i,example in enumerate(combined_dataset.train.images) if example[3] != []][:num_to_remove][-1]
+        combined_dataset.train.images[:] = [example for i, example in enumerate(combined_dataset.train.images) if (example[3] == [] and i <= cutoff_index) or i > cutoff_index]
+        print(len(combined_dataset.train), combined_dataset.train.num_positive_examples, combined_dataset.train.num_negative_examples)
+
+    if train_neg > train_pos:
+        print("Removing", train_neg-train_pos, "negative examples")
     nn_im_w = 320
     nn_im_h = 240
-    nn_out_w = 32
-    nn_out_h = 32
     with tf.Session() as sess:
         with tf.device('/cpu:0'):
             x = tf.placeholder(tf.float32, shape=[None, nn_im_w*nn_im_h*3])
-            y_ = tf.placeholder(tf.float32, shape=[None, nn_out_w*nn_out_h])
+            y_ = tf.placeholder(tf.float32, shape=[None, 1])
 
             h_pool1, W_conv1, b_conv1 = build_layer_1(x, nn_im_w, nn_im_h)
-            h_pool2 = build_layer_2(h_pool1)
-            h_pool3 = build_layer_3(h_pool2)
-            h_fc1 = fully_connected_layer(h_pool3, nn_im_w//8, nn_im_h//8) #/4 because of two 2x2 pooling layers
+            h_pool2, W_conv2, b_conv2 = build_layer_2(h_pool1)
+            h_pool3, W_conv3, b_conv3 = build_layer_3(h_pool2)
+            h_fc1, W_fc1, b_fc1 = fully_connected_layer(h_pool3, nn_im_w//8, nn_im_h//8) #/4 because of two 2x2 pooling layers
             keep_prob, h_fc1_drop = dropout(h_fc1)
-            y_conv = build_readout_layer(h_fc1_drop, nn_out_w*nn_out_h)
+            y_conv, W_fc2, b_fc2 = build_readout_layer(h_fc1_drop)
 
-            # See http://quabr.com/33712178/tensorflow-nan-bug for reasons for clipping.
-            ##cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_*tf.log(tf.clip_by_value(y_conv,1e-10,1.0)), reduction_indices=[1]))
-            #cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
-
-            # Sum squared differences between the example and calculated images (but do not sum over the batch dimension).
-            #ssd_images = tf.reduce_sum(tf.square(y_ - tf.nn.sigmoid(y_conv)), [1])
-            ssd_images = tf.reduce_sum(tf.mul(1-y_, y_conv),[1])*tf.reduce_sum(tf.mul(y_, 1.0-tf.clip_by_value(y_conv,1e-10,1.0)),[1])
-            mean_error = tf.reduce_mean(ssd_images) # average image sum of squares across all batches.
+            mean_error =  tf.reduce_mean(tf.square(y_ - y_conv))
             train_step = tf.train.AdamOptimizer(1e-4).minimize(mean_error)
-            #correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
-            #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            #RMS diff for accuracy
-            accuracy = (nn_out_w*nn_out_h - tf.reduce_mean(tf.reduce_sum(tf.square(y_ - y_conv), [1])))/(nn_out_w*nn_out_h)
+            accuracy = (1.0 - tf.reduce_mean(tf.square(y_ - y_conv)))
         sess.run(tf.initialize_all_variables())
 
         print("Training...")
-        for batch_no, batch in enumerate(combined_dataset.train.iter_batches(nn_im_w, nn_im_h, nn_out_w,nn_out_h, batch_size=10)):
+        combined_dataset.train.shuffle()
+        batch_size = 50
+        num_images = len(combined_dataset.train)
+        for batch_no, batch in enumerate(combined_dataset.train.iter_batches(nn_im_w, nn_im_h, 1,1, batch_size=batch_size)):
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch[0], y_: batch[1], keep_prob: 1.0})
             if batch_no % 5 == 0:
-                print("step %d, training accuracy %g"%(batch_no, train_accuracy))
-                r = y_conv.eval(feed_dict={x: batch[0], keep_prob: 1.0})
-                print('Input Min:',np.min(batch[0]), 'Avg:', np.mean(batch[0]), 'Max:', np.max(batch[0]))
-                print('Y Min:',np.min(batch[1]), 'Avg:', np.mean(batch[1]), 'Max:', np.max(batch[1]))
-                print('Y_Conv Min:',np.min(r), 'Avg:', np.mean(r), 'Max:', np.max(r))
+                print("%.0f%%, training accuracy %g"%(100*batch_no*batch_size/num_images, train_accuracy))
+                # r = y_conv.eval(feed_dict={x: batch[0], keep_prob: 1.0})
+                # print('Guess: ',  np.round(r.flatten()))
+                # print('Actual:', np.round(batch[1].flatten()))
+
 
             train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
         print("Testing...")
         cum_accuracy = 0
         num_batches = 0
-        for batch in combined_dataset.test.iter_batches(nn_im_w, nn_im_h,nn_out_w,nn_out_h, batch_size=10):
+        for batch in combined_dataset.test.iter_batches(nn_im_w, nn_im_h,1,1, batch_size=10):
             cum_accuracy += accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1], keep_prob: 1.0})
             num_batches += 1
+            break
         mean_accuracy = cum_accuracy/num_batches
+
         print("test accuracy %g"%mean_accuracy)
 
         # display an image
         cv2.namedWindow('Input')
-        cv2.namedWindow('Output')
-        im, y = next(combined_dataset.test.iter(nn_im_w,nn_im_h, nn_out_w, nn_out_h, normalize=False))
+        im, y = next(combined_dataset.test.iter(nn_im_w,nn_im_h, 1, 1, normalize=False))
         y = y_conv.eval(feed_dict={x: im, keep_prob: 1.0})
-        np.save('y.npy', y)
 
         im = im.reshape((nn_im_h,nn_im_w, 3)).astype(np.uint8)
-        y = (255*y).reshape((nn_out_h,nn_out_w)).astype(np.uint8)
+        y = (255*y).astype(np.uint8)
         cv2.imshow('Input',im)
-        cv2.imshow('Output',y)
-        cv2.imwrite('out.png', y)
+        r = h_pool3.eval(feed_dict={x: batch[0], keep_prob: 1.0})
+        r = r[0][:][:][0:3]
+        print(r.shape, np.max(r), np.min(r), np.mean(r))
+
         print(y)
         cv2.waitKey()
 
         # save model:
-        W1_val = sess.run(W_conv1)
-        np.save('W1.npy', W1_val)
-        np.save('y.npy', y)
+        # Weights
+        np.save('W1.npy', sess.run(W_conv1))
+        np.save('W2.npy', sess.run(W_conv2))
+        np.save('W3.npy', sess.run(W_conv3))
+        np.save('W4.npy', sess.run(W_fc1))
+        np.save('W5.npy', sess.run(W_fc2))
+
+        # Biases
+        np.save('b1.npy', sess.run(b_conv1))
+        np.save('b2.npy', sess.run(b_conv2))
+        np.save('b3.npy', sess.run(b_conv3))
+        np.save('b4.npy', sess.run(b_fc1))
+        np.save('b5.npy', sess.run(b_fc2))
