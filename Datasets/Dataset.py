@@ -99,6 +99,36 @@ class Dataset:
 
             yield im.reshape((1, input_row_size)),\
                    y.reshape((1, output_row_size))
+    def iter_people(self, batch_size=50, person_w=60, person_h=160, generate_negatives=True):
+        '''
+        Iterate over the images in a dataset, and for each image yield a cropped & resized image for each person.
+        '''
+        num_needed_negatives = 0
+        for image_path, image_width, image_height, bboxes in self.images:
+            im = cv2.imread(image_path)
+            if im is None:
+                raise Exception('Image did not load!' + image_path)
+            if image_width == 0 or image_height == 0:
+                image_height, image_width, _ = im.shape
+
+            if generate_negatives and len(bboxes) == 0:
+                # Generate {num_needed_negatives} random bboxes of up to 60x160
+                while num_needed_negatives > 0:
+                    if image_width > 60 and image_height > 160:
+                        min_x = random.randint(0, image_width-60)
+                        max_x = min_x + 60
+                        min_y = random.randint(0, image_height-160)
+                        max_y = min_y + 160
+                        yield im[min_y:max_y, min_x:max_x], False
+                        num_needed_negatives -= 1
+                    else:
+                        break
+            num_needed_negatives += len(bboxes)
+            for min_x, min_y, max_x, max_y in bboxes:
+                # BBOX dimensions are not necessarily in order :/
+                min_x, max_x = min(min_x, max_x), max(min_x, max_x)
+                min_y, max_y = min(min_y, max_y), max(min_y, max_y)
+                yield cv2.resize(im[min_y:max_y, min_x:max_x], (60,160)), True
     def __len__(self):
         return len(self.images)
     def __add__(self, other):
