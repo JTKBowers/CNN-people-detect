@@ -162,6 +162,14 @@ class Dataset:
     def num_positive_examples(self):
         return sum(map(lambda x: x[3]!=[], self.images))
 
+    def generate_negative_examples(self):
+        '''
+        Copies negative examples until there are an equal amount of positive and negative examples.
+        '''
+        num = self.num_positive_examples - self.num_negative_examples
+        negative_examples = list(filter(lambda x: x[3] == [], self.images))
+        self.images.extend(random.sample(negative_examples, num))
+
 class DatasetGroup:
     def __init__(self, test, train, validation=None):
         if type(test) is not Dataset:

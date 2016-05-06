@@ -28,6 +28,7 @@ if __name__ == '__main__':
     print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
     print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_dataset.test.num_positive_examples, combined_dataset.test.num_negative_examples))
 
+    combined_dataset.train.generate_negative_examples()
     combined_dataset.shuffle()
     combined_dataset.balance()
 
