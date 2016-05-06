@@ -6,13 +6,15 @@ from Datasets.INRIA import loadINRIA
 from Datasets.Zurich import loadZurich
 
 if __name__ == '__main__':
-    combined_dataset = loadTUD('/mnt/pedestrians/tud/tud-pedestrians') + \
-          loadTUD('/mnt/pedestrians/tud/tud-campus-sequence') + \
-          loadTUD('/mnt/pedestrians/tud/TUD-Brussels') + \
-          loadTUD('/mnt/pedestrians/tud/train-210') + \
-          loadTUD('/mnt/pedestrians/tud/train-400') + \
-          loadINRIA('/mnt/pedestrians/INRIA/INRIAPerson') + \
-          loadZurich('/mnt/pedestrians/zurich')
+    combined_dataset = loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-campus-sequence') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-Brussels') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-210') + \
+          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-400') + \
+          loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
+          loadZurich('/mnt/data/Datasets/pedestrians/Zurich')
+    combined_dataset.shuffle()
+    combined_dataset.balance()
 
     print(len(combined_dataset.train), 'examples')
     print(combined_dataset.train.num_positive_examples, 'positive examples')

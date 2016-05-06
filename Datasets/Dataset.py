@@ -110,6 +110,51 @@ class Dataset:
         self.images.extend(other.images)
     def shuffle(self):
         random.shuffle(self.images)
+    def balance(self):
+        '''
+        Orders the images so that they alternate between positive and negative images.
+
+        Returns any surplus images.
+        '''
+        iter_images = iter(self.images)
+        positive_stack = []
+        negative_stack = []
+        want_positive = True
+
+        new_image_list = []
+        # input_complete = len(self.images) == 0
+        while True:
+            # Read from stacks until one is empty
+            if want_positive and len(positive_stack) > 0:
+                new_image_list.append(positive_stack.pop())
+                want_positive = False
+                continue
+            if (not want_positive) and len(negative_stack) > 0:
+                new_image_list.append(negative_stack.pop())
+                want_positive = True
+                continue
+            # If the relevant stack is empty, read from input.
+            try:
+                image_tuple = next(iter_images)
+            except StopIteration: # END OF THE LINE
+                break
+            _, _, _, bboxes = image_tuple
+            positive = len(bboxes) != 0
+            if positive == want_positive:
+                new_image_list.append(image_tuple)
+                want_positive = not want_positive
+            else:
+                if positive:
+                    positive_stack.append(image_tuple)
+                else:
+                    negative_stack.append(image_tuple)
+        if len(positive_stack) > 0:
+            print("Warning: %i extra positive images have been discarded" % len(positive_stack))
+        if len(negative_stack) > 0:
+            print("Warning: %i extra negative images have been discarded" % len(negative_stack))
+        self.images = new_image_list
+
+        return positive_stack, negative_stack
     @property
     def num_negative_examples(self):
         return sum(map(lambda x: x[3]==[], self.images))
@@ -143,3 +188,8 @@ class DatasetGroup:
         self.train.shuffle()
         if self.validation is not None:
             self.validation.shuffle()
+    def balance(self):
+        self.test.balance()
+        self.train.balance()
+        if self.validation is not None:
+            self.validation.balance()
