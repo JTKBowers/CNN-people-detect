@@ -24,6 +24,41 @@ def render_bboxes_image(bboxes, output_width, output_height, input_width, input_
         cv2.rectangle(output_image,pt1, pt2, 255, cv2.FILLED)
     return output_image
 
+def batcher(iterator, batch_size=50, normalize=True):
+    '''
+    Converts iterator into one that emits batches of items,
+    where each item is inserted into a numpy array (and co-erced into an array).
+
+    I.E. [(x1,y1), (x2,y2)] -> (np.array([x1,x2]),np.array([y1,y2])) etc
+    '''
+    item_input_size = None
+    item_output_size = None
+    input_batch = None
+    output_batch = None
+    batch_index = 0
+    for item_input, item_output in iterator:
+        if input_batch is None:
+            input_batch = np.empty((batch_size, item_input.size), dtype=np.float32)
+            item_input_size = item_input.size
+        if output_batch is None:
+            output_batch = np.empty((batch_size, item_output.size), dtype=np.float32)
+            item_output_size = item_output.size
+        #normalize
+        if normalize:
+            item_input = item_input.astype(np.float32)/255
+            item_output = item_output.astype(np.float32)/255
+        input_batch[batch_index] = item_input.reshape((1, item_input_size))
+        output_batch[batch_index]= item_output.reshape((1, item_output_size))
+
+        batch_index += 1
+        if batch_index >= batch_size:
+            batch_index = 0
+            yield input_batch, output_batch
+    # If there are any remaining entries
+    if batch_index != 0:
+        #trim the arrays and yield
+        yield np.resize( input_batch, (batch_index, item_input_size)),\
+              np.resize(output_batch, (batch_index, item_output_size))
 class Dataset:
     def __init__(self, image_iterator, lazy_load=True, lazy_output_gen=True):
         '''
@@ -43,44 +78,9 @@ class Dataset:
     def add_image(self, image_tuple):
         self.images.append(image_tuple)
     def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50, normalize=True):
-        input_row_size = im_w*im_h*3
-        output_row_size = output_w*output_height
-        input_batch = np.empty((batch_size, input_row_size), dtype=np.float32) # 3 elements per pixel
-        output_batch = np.empty((batch_size, output_row_size), dtype=np.float32)
+        yield from batcher(self.iter(im_w, im_h, output_w, output_height), batch_size, normalize)
 
-        batch_index = 0
-        for image_path, image_width, image_height, bboxes in self.images:
-            im = cv2.imread(image_path)
-            if im is None:
-                raise Exception('Image did not load!' + image_path)
-            if image_width == 0 or image_height == 0:
-                image_height, image_width, _ = im.shape
-            im = cv2.resize(im, (im_w, im_h))
-
-            y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
-
-            #normalize
-            if normalize:
-                im = im.astype(np.float32)/255
-                y = y.astype(np.float32)/255
-
-            input_batch[batch_index] = im.reshape((1, input_row_size))
-            output_batch[batch_index]= y.reshape((1, output_row_size))
-
-            batch_index += 1
-            if batch_index >= batch_size:
-                batch_index = 0
-                yield input_batch, output_batch
-
-        # If there are any remaining entries
-        if batch_index != 0:
-            #trim the arrays and yield
-            yield np.resize( input_batch, (batch_index, input_row_size)),\
-                  np.resize(output_batch, (batch_index, output_row_size))
-
-    def iter(self, im_w, im_h, output_w, output_height, normalize=True):
-        input_row_size = im_w*im_h*3
-        output_row_size = output_w*output_height
+    def iter(self, im_w, im_h, output_w, output_height):
         for image_path, image_width, image_height, bboxes in self.images:
             im = cv2.imread(image_path)
             if im is None:
@@ -92,13 +92,7 @@ class Dataset:
 
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
 
-            #normalize
-            if normalize:
-                im = im.astype(np.float32)/255
-                y = y.astype(np.float32)/255
-
-            yield im.reshape((1, input_row_size)),\
-                   y.reshape((1, output_row_size))
+            yield im, y
     def iter_people(self, batch_size=50, person_w=60, person_h=160, generate_negatives=True):
         '''
         Iterate over the images in a dataset, and for each image yield a cropped & resized image for each person.
