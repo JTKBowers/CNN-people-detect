@@ -37,12 +37,14 @@ def batcher(iterator, batch_size=50, normalize=True):
     output_batch = None
     batch_index = 0
     for item_input, item_output in iterator:
+        if type(item_output) is bool:
+            item_output = 255*np.array([item_output]).astype(np.float32)
         if input_batch is None:
             input_batch = np.empty((batch_size, item_input.size), dtype=np.float32)
             item_input_size = item_input.size
         if output_batch is None:
-            output_batch = np.empty((batch_size, item_output.size), dtype=np.float32)
             item_output_size = item_output.size
+            output_batch = np.empty((batch_size, item_output_size), dtype=np.float32)
         #normalize
         if normalize:
             item_input = item_input.astype(np.float32)/255
