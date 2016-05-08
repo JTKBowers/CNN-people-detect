@@ -95,7 +95,7 @@ class Dataset:
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
 
             yield im, y
-    def iter_people(self, batch_size=50, person_w=60, person_h=160, generate_negatives=True):
+    def iter_people(self, person_w=64, person_h=160, generate_negatives=True):
         '''
         Iterate over the images in a dataset, and for each image yield a cropped & resized image for each person.
         '''
@@ -108,13 +108,13 @@ class Dataset:
                 image_height, image_width, _ = im.shape
 
             if generate_negatives and len(bboxes) == 0:
-                # Generate {num_needed_negatives} random bboxes of up to 60x160
+                # Generate {num_needed_negatives} random bboxes of up to person_w x person_h
                 while num_needed_negatives > 0:
-                    if image_width > 60 and image_height > 160:
-                        min_x = random.randint(0, image_width-60)
-                        max_x = min_x + 60
-                        min_y = random.randint(0, image_height-160)
-                        max_y = min_y + 160
+                    if image_width > person_w and image_height > person_h:
+                        min_x = random.randint(0, image_width - person_w)
+                        max_x = min_x + person_w
+                        min_y = random.randint(0, image_height - person_h)
+                        max_y = min_y + person_h
                         yield im[min_y:max_y, min_x:max_x], False
                         num_needed_negatives -= 1
                     else:
@@ -124,7 +124,7 @@ class Dataset:
                 # BBOX dimensions are not necessarily in order :/
                 min_x, max_x = min(min_x, max_x), max(min_x, max_x)
                 min_y, max_y = min(min_y, max_y), max(min_y, max_y)
-                yield cv2.resize(im[min_y:max_y, min_x:max_x], (60,160)), True
+                yield cv2.resize(im[min_y:max_y, min_x:max_x], (person_w, person_h)), True
     def __len__(self):
         return len(self.images)
     def __add__(self, other):
