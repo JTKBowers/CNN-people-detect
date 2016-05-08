@@ -12,7 +12,7 @@ if __name__ == '__main__':
           loadTUD('/mnt/data/Datasets/pedestrians/tud/train-210') + \
           loadTUD('/mnt/data/Datasets/pedestrians/tud/train-400') + \
           loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
-          loadZurich('/mnt/data/Datasets/pedestrians/Zurich')
+          loadZurich('/mnt/data/Datasets/pedestrians/zurich')
 
     combined_dataset.train.generate_negative_examples()
     combined_dataset.shuffle()
