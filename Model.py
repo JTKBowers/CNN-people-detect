@@ -12,8 +12,11 @@ Contains code to generate a blank model, save and load models, and train models.
 A pretrained model can also be partially loaded, and other components of it trained.
 '''
 class Model(metaclass=ABCMeta):
-    def __init__(self):
+    def __init__(self, sess = None):
         self.layers = []
+        if sess is None:
+            sess = tf.Session()
+        self.sess = sess
     def weight_variable(self, shape, initial=None):
         if initial is None:
             initial = tf.truncated_normal(shape, stddev=0.1)
@@ -68,7 +71,7 @@ class Model(metaclass=ABCMeta):
         return y_conv, W_fc2, b_fc2
 
     @abstractmethod
-    def build_graph(self, nn_im_w, nn_im_h, sess=None, num_colour_channels=3):
+    def build_graph(self, nn_im_w, nn_im_h, num_colour_channels=3):
         pass
     @abstractmethod
     def load(self, folder_path):
@@ -91,13 +94,10 @@ class BooleanModel(Model):
     Implements the boolean classifier (human or not human).
     See train_model_boolean.py
     '''
-    def build_graph(self, nn_im_w, nn_im_h, sess=None, num_colour_channels=3, weights=None, biases=None):
+    def build_graph(self, nn_im_w, nn_im_h, num_colour_channels=3, weights=None, biases=None):
         num_outputs = 1 #ofc
         self.nn_im_w = nn_im_w
         self.nn_im_h = nn_im_h
-        if sess is None:
-            sess = tf.Session()
-        self.sess = sess
 
         if weights is None:
             weights = [None, None, None, None, None]
@@ -134,7 +134,7 @@ class BooleanModel(Model):
             self.train_step = tf.train.AdamOptimizer(1e-4).minimize(self.mean_error)
             self.accuracy = (1.0 - tf.reduce_mean(tf.square(self.y_ - self.y_conv)))
         self.sess.run(tf.initialize_all_variables())
-    def load(self, folder_path, nn_im_w, nn_im_h, sess=None, num_colour_channels=3):
+    def load(self, folder_path, nn_im_w, nn_im_h, num_colour_channels=3):
         weights = []
         weights.append(np.load(os.path.join(folder_path, 'W1.npy')))
         weights.append(np.load(os.path.join(folder_path, 'W2.npy')))
@@ -149,22 +149,22 @@ class BooleanModel(Model):
         biases.append(np.load(os.path.join(folder_path, 'b4.npy')))
         biases.append(np.load(os.path.join(folder_path, 'b5.npy')))
 
-        self.build_graph(nn_im_w, nn_im_h, sess, num_colour_channels, weights=weights, biases=biases)
-    def save(self, sess, folder_path):
+        self.build_graph(nn_im_w, nn_im_h, num_colour_channels, weights=weights, biases=biases)
+    def save(self, folder_path):
         if not os.path.exists(folder_path):
             os.mkdir(folder_path)
-        np.save(os.path.join(folder_path, 'W1.npy'), sess.run(self.layers[0][1]))
-        np.save(os.path.join(folder_path, 'W2.npy'), sess.run(self.layers[1][1]))
-        np.save(os.path.join(folder_path, 'W3.npy'), sess.run(self.layers[2][1]))
-        np.save(os.path.join(folder_path, 'W4.npy'), sess.run(self.layers[3][1]))
-        np.save(os.path.join(folder_path, 'W5.npy'), sess.run(self.layers[4][1]))
+        np.save(os.path.join(folder_path, 'W1.npy'), self.sess.run(self.layers[0][1]))
+        np.save(os.path.join(folder_path, 'W2.npy'), self.sess.run(self.layers[1][1]))
+        np.save(os.path.join(folder_path, 'W3.npy'), self.sess.run(self.layers[2][1]))
+        np.save(os.path.join(folder_path, 'W4.npy'), self.sess.run(self.layers[3][1]))
+        np.save(os.path.join(folder_path, 'W5.npy'), self.sess.run(self.layers[4][1]))
 
         # Biases
-        np.save(os.path.join(folder_path, 'b1.npy'), sess.run(self.layers[0][2]))
-        np.save(os.path.join(folder_path, 'b2.npy'), sess.run(self.layers[1][2]))
-        np.save(os.path.join(folder_path, 'b3.npy'), sess.run(self.layers[2][2]))
-        np.save(os.path.join(folder_path, 'b4.npy'), sess.run(self.layers[3][2]))
-        np.save(os.path.join(folder_path, 'b5.npy'), sess.run(self.layers[4][2]))
+        np.save(os.path.join(folder_path, 'b1.npy'), self.sess.run(self.layers[0][2]))
+        np.save(os.path.join(folder_path, 'b2.npy'), self.sess.run(self.layers[1][2]))
+        np.save(os.path.join(folder_path, 'b3.npy'), self.sess.run(self.layers[2][2]))
+        np.save(os.path.join(folder_path, 'b4.npy'), self.sess.run(self.layers[3][2]))
+        np.save(os.path.join(folder_path, 'b5.npy'), self.sess.run(self.layers[4][2]))
     def train(self, train_dataset):
         batch_size = 50
         num_images = len(train_dataset)

@@ -55,8 +55,8 @@ if __name__ == '__main__':
     nn_im_w = 64
     nn_im_h = 160
     with tf.Session() as sess:
-        model = PersonModel()
-        model.build_graph(nn_im_w, nn_im_h, sess=sess)
+        model = PersonModel(sess)
+        model.build_graph(nn_im_w, nn_im_h)
 
         print("Training...")
         model.train(combined_dataset.train.iter_people())
@@ -68,4 +68,4 @@ if __name__ == '__main__':
 
         # save model:
         # Weights
-        model.save(sess, 'out/')
+        model.save('out/')

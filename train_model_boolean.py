@@ -35,8 +35,8 @@ if __name__ == '__main__':
     nn_im_w = 320
     nn_im_h = 240
     with tf.Session() as sess:
-        model = Model.BooleanModel()
-        model.build_graph(nn_im_w, nn_im_h, sess=sess)
+        model = Model.BooleanModel(sess)
+        model.build_graph(nn_im_w, nn_im_h)
 
         print("Training...")
         model.train(combined_dataset.train)
@@ -48,4 +48,4 @@ if __name__ == '__main__':
 
         # save model:
         # Weights
-        model.save(sess, 'out/')
+        model.save('out/')

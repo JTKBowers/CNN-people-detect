@@ -3,7 +3,9 @@ import cv2
 import tensorflow as tf
 import numpy as np
 
-import Model
+from Datasets.Dataset import batcher
+
+from person_classification import PersonModel
 
 from Datasets.tud import loadTUD
 from Datasets.INRIA import loadINRIA
@@ -22,26 +24,28 @@ print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_da
 cover_people = False
 nn_channel = 0
 with tf.Session() as sess:
-    model = Model.BooleanModel()
-    w = 320
-    h = 240
-    model.load('0.8_0.8', w, h, sess=sess)
+    model = PersonModel(sess)
+    w = 64
+    h = 160
+    model.load('out', w, h)
     #print('%0.2f' % model.test(combined_dataset.test + combined_dataset.train))
 
-    for im, y in combined_dataset.test.iter(w,h, w//8, h//8, normalize=False):
+    for im, y in batcher(combined_dataset.test.iter_people(), batch_size=1):
         y_conv = model.eval(im)
-        conv_output = model.layers[1][0].eval(feed_dict={model.x: im, model.keep_prob: 1.0})[0]
-        print(255*int(np.max(y_conv)) == np.max(y))
-        im = im.reshape((h,w, 3)).astype(np.uint8)
-        y = y.reshape((h//8, w//8)).astype(np.uint8)
+        conv_output = model.layers[2][0].eval(feed_dict={model.x: im, model.keep_prob: 1.0})[0]
+        print(np.max(conv_output))
+        #print(255*int(np.max(y_conv)) == np.max(y))
+        print(np.max(y_conv), np.max(y))
+        im = (255*im[0].reshape((h,w, 3))).astype(np.uint8)
+        #y = y.reshape((h//8, w//8)).astype(np.uint8)
 
         if cover_people:
             im = cv2.bitwise_and(im, im, mask=255-cv2.resize(y, (w, h))) # hide annotated people
         cv2.imshow('Input',im)
-        cv2.imshow('Output',cv2.resize(y, (w, h)))
+        #cv2.imshow('Output',cv2.resize(y, (w, h)))
         while(True):
-            conv_im = 255*conv_output[:,:,nn_channel].astype(np.uint8)
-            print(conv_im.shape)
+            conv_im = (255*conv_output[:,:,nn_channel]).astype(np.uint8)
+            print("Convnet channel", nn_channel)
             cv2.imshow('Conv Output', cv2.resize(conv_im, (w, h)))
             k = cv2.waitKey() & 0xFF
             if k == ord('q') or k == 27 or k == ord(' '):
