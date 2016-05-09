@@ -114,7 +114,7 @@ class BooleanModel(Model):
             conv2_output_channels = 16
             conv3_output_channels = 8
 
-            conv_layer_1_input = tf.reshape(self.x, [-1, nn_im_w, nn_im_h, num_colour_channels]) #The resized input image
+            conv_layer_1_input = tf.reshape(self.x, [-1, nn_im_h, nn_im_w, num_colour_channels]) #The resized input image
             self.build_conv_layer(conv_layer_1_input, num_colour_channels, conv1_output_channels, initial_weights=weights[0], initial_biases=biases[0]) # layer 1
             self.build_conv_layer(self.layers[0][0], conv1_output_channels, conv2_output_channels, initial_weights=weights[1], initial_biases=biases[1])# layer 2
             self.build_conv_layer(self.layers[1][0], conv2_output_channels, conv3_output_channels, initial_weights=weights[2], initial_biases=biases[2])# layer 3
