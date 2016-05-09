@@ -9,13 +9,21 @@ from person_classification import PersonModel
 
 from Datasets.tud import loadTUD
 from Datasets.INRIA import loadINRIA
+from Datasets.Zurich import loadZurich
+
 
 combined_dataset = loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
       loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-campus-sequence') + \
       loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-Brussels') + \
       loadTUD('/mnt/data/Datasets/pedestrians/tud/train-210') + \
       loadTUD('/mnt/data/Datasets/pedestrians/tud/train-400') + \
-      loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson')
+      loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
+      loadZurich('/mnt/data/Datasets/pedestrians/zurich')
+
+combined_dataset.train.generate_negative_examples()
+combined_dataset.shuffle()
+combined_dataset.balance()
+
 train_pos = combined_dataset.train.num_positive_examples
 train_neg = combined_dataset.train.num_negative_examples
 print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
