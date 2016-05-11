@@ -42,9 +42,10 @@ if __name__ == '__main__':
         model.train(combined_dataset.train)
 
         print("Testing...")
-        test_accuracy = model.test(combined_dataset.test)
+        test_accuracy, confusion_matrix = model.test(combined_dataset.test.iter(nn_im_w, nn_im_h,1,1))
 
         print("test accuracy %g" % test_accuracy)
+        print("Test confusion matrix:", confusion_matrix)
 
         # save model:
         # Weights

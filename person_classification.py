@@ -25,15 +25,6 @@ class PersonModel(Model.BooleanModel):
                 # print('Guess: ',  np.round(r.flatten()))
                 # print('Actual:', np.round(batch[1].flatten()))
             self.train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
-    def test(self, person_iter):
-        cum_accuracy = 0
-        num_batches = 0
-        for batch in batcher(person_iter, batch_size=10):
-            cum_accuracy += self.accuracy.eval(feed_dict={
-                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
-            num_batches += 1
-        mean_accuracy = cum_accuracy/num_batches
-        return mean_accuracy
 
 if __name__ == '__main__':
     combined_dataset = loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
@@ -62,9 +53,10 @@ if __name__ == '__main__':
         model.train(combined_dataset.train.iter_people())
 
         print("Testing...")
-        test_accuracy = model.test(combined_dataset.test.iter_people())
+        test_accuracy, confusion_matrix = model.test(combined_dataset.test.iter_people())
 
         print("test accuracy %g" % test_accuracy)
+        print("Test confusion matrix:", confusion_matrix)
 
         # save model:
         # Weights

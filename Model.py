@@ -136,6 +136,19 @@ class BooleanModel(Model):
 
             self.accuracy = (1.0 - tf.reduce_mean(tf.abs(self.y_ - tf.round(self.y_conv))))
 
+
+            positive_examples = tf.greater_equal(self.y_, 0.5)
+            negative_examples = tf.logical_not(positive_examples)
+            positive_classifications = tf.greater_equal(self.y_conv, 0.5)
+            negative_classifications = tf.logical_not(positive_classifications)
+
+            self.true_positive = tf.reduce_sum(tf.cast(tf.logical_and(positive_examples, positive_classifications),tf.int32)) # count the examples that are positive and classified as positive
+            self.false_positive = tf.reduce_sum(tf.cast(tf.logical_and(negative_examples, positive_classifications),tf.int32)) # count the examples that are negative but classified as positive
+
+            self.true_negative = tf.reduce_sum(tf.cast(tf.logical_and(negative_examples, negative_classifications),tf.int32)) # count the examples that are negative and classified as negative
+            self.false_negative = tf.reduce_sum(tf.cast(tf.logical_and(positive_examples, negative_classifications),tf.int32)) # count the examples that are positive but classified as negative
+
+            self.confusion_matrix = tf.reshape(tf.pack([self.true_positive, self.false_positive, self.false_negative, self.true_negative]), [2,2])
         self.sess.run(tf.initialize_all_variables())
     def load(self, folder_path, nn_im_w, nn_im_h, num_colour_channels=3):
         weights = []
@@ -183,12 +196,16 @@ class BooleanModel(Model):
     def test(self, dataset_iter):
         cum_accuracy = 0
         num_batches = 0
+
+        confusion_matrix = np.zeros((2,2,))
         for batch in batcher(dataset_iter, batch_size=10):
             cum_accuracy += self.accuracy.eval(feed_dict={
+                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+            confusion_matrix += self.confusion_matrix.eval(feed_dict={
                 self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
             num_batches += 1
         mean_accuracy = cum_accuracy/num_batches
 
-        return mean_accuracy
+        return mean_accuracy, confusion_matrix
     def eval(self, image):
         return self.y_conv.eval(feed_dict={self.x: image, self.keep_prob: 1.0})
