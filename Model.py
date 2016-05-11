@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 import tensorflow as tf
 import numpy as np
 
+from Datasets.Dataset import batcher
 
 '''
 Implements models in an object-oriented way.
@@ -130,9 +131,11 @@ class BooleanModel(Model):
             self.keep_prob, self.h_drop = self.dropout(self.layers[3][0])
             self.y_conv,_,_ = self.build_readout_layer(self.h_drop, num_outputs, initial_weights=weights[4], initial_biases=biases[4])
 
-            self.mean_error =  tf.reduce_mean(tf.square(self.y_ - self.y_conv))
+            self.mean_error =  tf.sqrt(tf.reduce_mean(tf.square(self.y_ - self.y_conv)))
             self.train_step = tf.train.AdamOptimizer(1e-4).minimize(self.mean_error)
-            self.accuracy = (1.0 - tf.reduce_mean(tf.square(self.y_ - self.y_conv)))
+
+            self.accuracy = (1.0 - tf.reduce_mean(tf.abs(self.y_ - tf.round(self.y_conv))))
+
         self.sess.run(tf.initialize_all_variables())
     def load(self, folder_path, nn_im_w, nn_im_h, num_colour_channels=3):
         weights = []
@@ -177,10 +180,10 @@ class BooleanModel(Model):
                 # print('Guess: ',  np.round(r.flatten()))
                 # print('Actual:', np.round(batch[1].flatten()))
             self.train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
-    def test(self, dataset):
+    def test(self, dataset_iter):
         cum_accuracy = 0
         num_batches = 0
-        for batch in dataset.iter_batches(self.nn_im_w, self.nn_im_h,1,1, batch_size=10):
+        for batch in batcher(dataset_iter, batch_size=10):
             cum_accuracy += self.accuracy.eval(feed_dict={
                 self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
             num_batches += 1
