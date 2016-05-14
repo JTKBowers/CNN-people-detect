@@ -46,7 +46,6 @@ class Model(metaclass=ABCMeta):
         return h_pool1, W_conv1, b_conv1
 
     def build_fully_connected_layer(self, layer_input, im_w, im_h, input_channels, num_neurons=1024, initial_weights=None, initial_biases=None):
-        input_channels = 8
         W_fc1 = self.weight_variable([im_w * im_h * input_channels, num_neurons], initial_weights)
         b_fc1 = self.bias_variable([num_neurons], initial_biases)
 
@@ -124,8 +123,8 @@ class BooleanModel(Model):
             convnet_output_w = nn_im_w//8
             convnet_output_h = nn_im_h//8
 
-            fully_connected_layer_input = tf.reshape(self.layers[2][0], [-1, convnet_output_w * convnet_output_h * 8])
-            self.build_fully_connected_layer(fully_connected_layer_input, convnet_output_w, convnet_output_h, 8, initial_weights=weights[3], initial_biases=biases[3])
+            fully_connected_layer_input = tf.reshape(self.layers[2][0], [-1, convnet_output_w * convnet_output_h * conv3_output_channels])
+            self.build_fully_connected_layer(fully_connected_layer_input, convnet_output_w, convnet_output_h, conv3_output_channels, initial_weights=weights[3], initial_biases=biases[3])
 
             # The dropout stage and readout layer
             self.keep_prob, self.h_drop = self.dropout(self.layers[3][0])
