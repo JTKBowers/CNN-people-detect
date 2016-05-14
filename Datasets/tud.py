@@ -16,13 +16,16 @@ from .Dataset import *
 def read_idl(path, idl_path):
     with open(idl_path) as idl:
         for line in idl:
-            match = re.match('"(.+)"[: ]*(.*)$', line)
+            match = re.match('"(.+)"(: .*)?.*[;.]$', line.strip())
             if match:
                 filename, bboxes_raw = match.groups()
                 bboxes = []
-                for bbox_match in re.finditer('\((\d+), (\d+), (\d+), (\d+)\)', bboxes_raw):
-                    bboxes.append(cast_bbox(bbox_match.groups())) #fix image dimensions?
+                if bboxes_raw is not None:
+                    for bbox_match in re.finditer('\((\d+), (\d+), (\d+), (\d+)\)', bboxes_raw[2:]):
+                        bboxes.append(cast_bbox(bbox_match.groups())) #fix image dimensions?
                 yield os.path.join(path, filename), 0, 0, bboxes #image width and height are set to 0 so that they are calculated later.
+            else:
+                raise Exception('IDL parsing error:'+line[:-1])
 
 def TUD_iterator(path):
     # find all .idl files in the directory.
