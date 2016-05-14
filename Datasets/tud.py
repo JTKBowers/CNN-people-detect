@@ -40,8 +40,6 @@ def loadTUD(path, test_train_segmentation_ratio=0.7):
     '''
     tud_examples = list(TUD_iterator(path))
 
-    random.shuffle(tud_examples)
-
     cut = int(len(tud_examples)*test_train_segmentation_ratio)
     train_set = Dataset(tud_examples[:cut])
     test_set = Dataset(tud_examples[cut:])
