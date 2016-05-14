@@ -16,7 +16,7 @@ from .Dataset import *
 def read_idl(path, idl_path):
     with open(idl_path) as idl:
         for line in idl:
-            match = re.match('"(.+)": (.+)$', line)
+            match = re.match('"(.+)"[: ]*(.*)$', line)
             if match:
                 filename, bboxes_raw = match.groups()
                 bboxes = []
