@@ -183,9 +183,13 @@ class Dataset:
         return positive_stack, negative_stack
     @property
     def num_negative_examples(self):
+        if any(map(lambda x: type(x[3]) is not list, self.images)):
+            raise Exception('BBOX type error!')
         return sum(map(lambda x: x[3]==[], self.images))
     @property
     def num_positive_examples(self):
+        if any(map(lambda x: type(x[3]) is not list, self.images)):
+            raise Exception('BBOX type error!')
         return sum(map(lambda x: x[3]!=[], self.images))
 
     def generate_negative_examples(self):
@@ -194,6 +198,9 @@ class Dataset:
         '''
         num = self.num_positive_examples - self.num_negative_examples
         negative_examples = list(filter(lambda x: x[3] == [], self.images))
+        if num >= len(negative_examples):
+            print('Warning: repeating negative examples!')
+            negative_examples.extend(negative_examples)
         self.images.extend(random.sample(negative_examples, num))
 
 class DatasetGroup:
