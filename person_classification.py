@@ -37,16 +37,15 @@ if __name__ == '__main__':
           loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-MotionPairs/negative') + \
           loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
           loadZurich('/mnt/data/Datasets/pedestrians/zurich')
+
+    combined_dataset.train.generate_negative_examples()
+    combined_dataset.shuffle()
+    combined_dataset.balance()
+
     train_pos = combined_dataset.train.num_positive_examples
     train_neg = combined_dataset.train.num_negative_examples
     print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
     print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_dataset.test.num_positive_examples, combined_dataset.test.num_negative_examples))
-
-    combined_dataset.train.generate_negative_examples()
-    combined_dataset.test.generate_negative_examples()
-    combined_dataset.shuffle()
-    combined_dataset.balance()
-
     nn_im_w = 64
     nn_im_h = 160
     with tf.Session() as sess:
