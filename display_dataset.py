@@ -17,32 +17,23 @@ if __name__ == '__main__':
           loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
           loadZurich('/mnt/data/Datasets/pedestrians/zurich')
 
-    combined_dataset.train.generate_negative_examples()
-    combined_dataset.shuffle()
-    combined_dataset.balance()
+    # combined_dataset.train.generate_negative_examples()
+    # combined_dataset.test.generate_negative_examples()
+    # combined_dataset.shuffle()
+    # combined_dataset.balance()
 
-    print(len(combined_dataset.train), 'examples')
-    print(combined_dataset.train.num_positive_examples, 'positive examples')
-    print(combined_dataset.train.num_negative_examples, 'negative examples')
+    num_train = len(combined_dataset.train)
+    num_pos = combined_dataset.train.num_positive_examples
+    num_neg = combined_dataset.train.num_negative_examples
+    print('{} training examples ({}+, {}-)'.format(num_train, num_pos, num_neg))
 
-    cover_people = True
+    num_test = len(combined_dataset.test)
+    num_pos = combined_dataset.test.num_positive_examples
+    num_neg = combined_dataset.test.num_negative_examples
+    print('{} test examples ({}+, {}-)'.format(num_test, num_pos, num_neg))
 
-    cv2.namedWindow('Input')
-    cv2.namedWindow('Output')
-    input_width, input_height = 512, 512
-    output_width, output_height = 100, 100
-    # for im, y in combined_dataset.test.iter(input_width,input_height, output_width, output_height, normalize=False):
-    #     im = im.reshape((input_width,input_height, 3)).astype(np.uint8)
-    #     y = y.reshape((output_height,output_width)).astype(np.uint8)
-    #
-    #     if cover_people:
-    #         im = cv2.bitwise_and(im, im, mask=255-cv2.resize(y, (input_width, input_height))) # hide annotated people
-    #     cv2.imshow('Input',im)
-    #     cv2.imshow('Output',y)
-    #     k = cv2.waitKey() & 0xFF
-    #     if k == ord('q')or k == 27:
-    #         break
-    for im, klass in combined_dataset.train.iter_people():
+    # Iterate over people
+    for im, class_ in combined_dataset.train.iter_people():
         cv2.imshow('Output',im)
         k = cv2.waitKey() & 0xFF
         if k == ord('q')or k == 27:
