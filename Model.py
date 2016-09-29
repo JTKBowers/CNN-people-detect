@@ -108,6 +108,7 @@ class BooleanModel(Model):
             # Placeholder variables for the input image and output images
             self.x = tf.placeholder(tf.float32, shape=[None, nn_im_w*nn_im_h*3])
             self.y_ = tf.placeholder(tf.float32, shape=[None, num_outputs])
+            self.threshold = tf.placeholder(tf.float32)
 
             # Build the convolutional and pooling layers
             conv1_output_channels = 32
@@ -138,7 +139,7 @@ class BooleanModel(Model):
 
             positive_examples = tf.greater_equal(self.y_, 0.5)
             negative_examples = tf.logical_not(positive_examples)
-            positive_classifications = tf.greater_equal(self.y_conv, 0.5)
+            positive_classifications = tf.greater_equal(self.y_conv, self.threshold)
             negative_classifications = tf.logical_not(positive_classifications)
 
             self.true_positive = tf.reduce_sum(tf.cast(tf.logical_and(positive_examples, positive_classifications),tf.int32)) # count the examples that are positive and classified as positive
@@ -147,7 +148,11 @@ class BooleanModel(Model):
             self.true_negative = tf.reduce_sum(tf.cast(tf.logical_and(negative_examples, negative_classifications),tf.int32)) # count the examples that are negative and classified as negative
             self.false_negative = tf.reduce_sum(tf.cast(tf.logical_and(positive_examples, negative_classifications),tf.int32)) # count the examples that are positive but classified as negative
 
+            self.positive_count = tf.reduce_sum(tf.cast(positive_examples, tf.int32)) # count the examples that are positive
+            self.negative_count = tf.reduce_sum(tf.cast(negative_examples, tf.int32)) # count the examples that are negative
+
             self.confusion_matrix = tf.reshape(tf.pack([self.true_positive, self.false_positive, self.false_negative, self.true_negative]), [2,2])
+
         self.sess.run(tf.initialize_all_variables())
     def load(self, folder_path, nn_im_w, nn_im_h, num_colour_channels=3):
         weights = []
@@ -192,7 +197,7 @@ class BooleanModel(Model):
                 # print('Guess: ',  np.round(r.flatten()))
                 # print('Actual:', np.round(batch[1].flatten()))
             self.train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
-    def test(self, dataset_iter):
+    def test(self, dataset_iter, threshold=0.5):
         cum_accuracy = 0
         num_batches = 0
 
@@ -201,10 +206,35 @@ class BooleanModel(Model):
             cum_accuracy += self.accuracy.eval(feed_dict={
                 self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
             confusion_matrix += self.confusion_matrix.eval(feed_dict={
-                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0, self.threshold: threshold})
             num_batches += 1
         mean_accuracy = cum_accuracy/num_batches
 
         return mean_accuracy, confusion_matrix
+    def ROC(self, dataset_iter, threshold_step=0.1):
+        TPs = [0 for i in range(int(1/threshold_step)+1)]
+        FPs = [0 for i in range(int(1/threshold_step)+1)]
+        positive_count = 0
+        negative_count = 0
+        for batch in batcher(dataset_iter, batch_size=100):
+            # The number of positive examples in this batch
+            positive_count += self.positive_count.eval(feed_dict={
+                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+            # The number of negative examples in the batch
+            negative_count += self.negative_count.eval(feed_dict={
+                self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+
+            threshold = 0.0
+            index = 0
+            while threshold <= 1.0:
+                TPs[index] += self.true_positive.eval(feed_dict={
+                    self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0, self.threshold: threshold})
+                FPs[index] += self.false_positive.eval(feed_dict={
+                    self.x: batch[0], self.y_: batch[1], self.keep_prob: 1.0, self.threshold: threshold})
+
+                threshold += threshold_step
+                index += 1
+
+        return [tp/positive_count for tp in TPs], [fp/negative_count for fp in FPs]
     def eval(self, image):
         return self.y_conv.eval(feed_dict={self.x: image, self.keep_prob: 1.0})
