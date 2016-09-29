@@ -23,8 +23,6 @@ def loadZurich(path, test_train_segmentation_ratio=0.7):
     '''
     zurich_examples = list(Zurich_iterator(path))
 
-    random.shuffle(zurich_examples)
-
     cut = int(len(zurich_examples)*test_train_segmentation_ratio)
     train_set = Dataset(zurich_examples[:cut])
     test_set = Dataset(zurich_examples[cut:])
