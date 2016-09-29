@@ -34,9 +34,10 @@ if __name__ == '__main__':
     train_neg = combined_dataset.train.num_negative_examples
     print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
     print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_dataset.test.num_positive_examples, combined_dataset.test.num_negative_examples))
+
     nn_im_w = 64
     nn_im_h = 160
-    
+
     ROC = True
     confusion_matrices = []
     with tf.Session() as sess:
@@ -47,6 +48,7 @@ if __name__ == '__main__':
         test_accuracy, confusion_matrix = model.test(combined_dataset.test.iter_people())
 
         if ROC:
+            print("Generating ROC curve:")
             print(model.ROC(combined_dataset.test.iter_people()))
         print(confusion_matrices)
         print("test accuracy %g" % test_accuracy)

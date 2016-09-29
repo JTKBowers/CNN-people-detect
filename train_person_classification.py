@@ -58,10 +58,4 @@ if __name__ == '__main__':
         print("Training...")
         model.train(combined_dataset.train.iter_people())
 
-        print("Testing...")
-        test_accuracy, confusion_matrix = model.test(combined_dataset.test.iter_people())
-
-        print("test accuracy %g" % test_accuracy)
-        print("Test confusion matrix:", confusion_matrix)
-
         model.save('out/')
