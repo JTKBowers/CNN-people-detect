@@ -134,7 +134,7 @@ if __name__ == '__main__':
     nn_im_h = 160
     with tf.Session() as sess:
         model = Model.BooleanModel(sess)
-        model.load('out/', nn_im_w, nn_im_h)
+        model.load('saved_model/', nn_im_w, nn_im_h)
 
         image_count = 0
         HOG_TP_count = 0

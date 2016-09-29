@@ -42,7 +42,7 @@ if __name__ == '__main__':
     confusion_matrices = []
     with tf.Session() as sess:
         model = Model.BooleanModel(sess)
-        model.load('out/', nn_im_w, nn_im_h)
+        model.load('saved_model/', nn_im_w, nn_im_h)
 
         print("Testing...")
         test_accuracy, confusion_matrix = model.test(combined_dataset.test.iter_people())
