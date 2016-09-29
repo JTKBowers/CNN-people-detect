@@ -1,21 +1,21 @@
 import cv2
 import numpy as np
 
-from Datasets.tud import loadTUD
-from Datasets.INRIA import loadINRIA
-from Datasets.Zurich import loadZurich
+from Datasets.tud import load_tud
+from Datasets.inria import load_inria
+from Datasets.zurich import load_zurich
 
 if __name__ == '__main__':
-    combined_dataset = loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-campus-sequence') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/tud-crossing-sequence') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-Brussels') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-210') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/train-400') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-MotionPairs/positive') + \
-          loadTUD('/mnt/data/Datasets/pedestrians/tud/TUD-MotionPairs/negative') + \
-          loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
-          loadZurich('/mnt/data/Datasets/pedestrians/zurich')
+    combined_dataset = load_tud('/mnt/data/Datasets/pedestrians/tud/tud-pedestrians') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/tud-campus-sequence') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/tud-crossing-sequence') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/TUD-Brussels') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/train-210') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/train-400') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/TUD-MotionPairs/positive') + \
+          load_tud('/mnt/data/Datasets/pedestrians/tud/TUD-MotionPairs/negative') + \
+          load_inria('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson') + \
+          load_zurich('/mnt/data/Datasets/pedestrians/zurich')
 
     # combined_dataset.train.generate_negative_examples()
     # combined_dataset.test.generate_negative_examples()

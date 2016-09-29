@@ -66,7 +66,7 @@ def INRIADataset(path, subdir):
     for neg in os.listdir(os.path.join(path, subdir, 'neg')):
         yield os.path.join(path, subdir, 'neg', neg),0,0,[]
 
-def loadINRIA(path):
+def load_inria(path):
     '''
     Load the INRIA dataset. Call this!
 

@@ -7,9 +7,9 @@ import tensorflow as tf
 import numpy as np
 import json, os
 
-from Datasets.tud import loadTUD
-from Datasets.INRIA import loadINRIA
-from Datasets.Zurich import loadZurich
+from Datasets.tud import load_tud
+from Datasets.inria import load_inria
+from Datasets.zurich import load_zurich
 
 import Model
 
@@ -129,7 +129,7 @@ def bbox_correct(bbox, example_bboxes):
         return False
 
 if __name__ == '__main__':
-    combined_dataset = loadINRIA('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson')
+    combined_dataset = load_inria('/mnt/data/Datasets/pedestrians/INRIA/INRIAPerson')
     nn_im_w = 64
     nn_im_h = 160
     with tf.Session() as sess:

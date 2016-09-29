@@ -15,7 +15,7 @@ def Zurich_iterator(path):
     for idl_path in glob.glob(os.path.join(path, 'annotations/*.idl.txt')):
         yield from read_idl(os.path.join(path, 'images/'), idl_path)
 
-def loadZurich(path, test_train_segmentation_ratio=0.7):
+def load_zurich(path, test_train_segmentation_ratio=0.7):
     '''
     Loads a Zurich dataset. Call this!
 

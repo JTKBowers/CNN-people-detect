@@ -32,7 +32,7 @@ def TUD_iterator(path):
     for idl_path in glob.glob(os.path.join(path, '*.idl')):
         yield from read_idl(path, idl_path)
 
-def loadTUD(path, test_train_segmentation_ratio=0.7):
+def load_tud(path, test_train_segmentation_ratio=0.7):
     '''
     Loads a TUD dataset. Call this!
 
