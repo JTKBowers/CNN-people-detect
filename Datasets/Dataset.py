@@ -61,6 +61,7 @@ def batcher(iterator, batch_size=50, normalize=True):
         #trim the arrays and yield
         yield np.resize( input_batch, (batch_index, item_input_size)),\
               np.resize(output_batch, (batch_index, item_output_size))
+
 class Dataset:
     def __init__(self, image_iterator, lazy_load=True, lazy_output_gen=True):
         '''
@@ -77,8 +78,10 @@ class Dataset:
         - lazy_output_gen: Whether to generate the output images when they are requested, rather than at load.
         '''
         self.images = list(image_iterator)
+
     def add_image(self, image_tuple):
         self.images.append(image_tuple)
+
     def iter_batches(self, im_w, im_h, output_w, output_height, batch_size=50, normalize=True):
         yield from batcher(self.iter(im_w, im_h, output_w, output_height), batch_size, normalize)
 
@@ -95,9 +98,12 @@ class Dataset:
             y = render_bboxes_image(bboxes, output_w, output_height, image_width, image_height)
 
             yield im, y
+
     def iter_people(self, person_w=64, person_h=160, generate_negatives=True):
         '''
-        Iterate over the images in a dataset, and for each image yield a cropped & resized image for each person.
+        Iterate over the images in a dataset, and for each image yield a tuple containing:
+        - a cropped & resized image for each person
+        - a boolean stating if a person was found for each image
         '''
         num_needed_negatives = 0
         for image_path, image_width, image_height, bboxes in self.images:
@@ -125,17 +131,22 @@ class Dataset:
                 min_x, max_x = min(min_x, max_x), max(min_x, max_x)
                 min_y, max_y = min(min_y, max_y), max(min_y, max_y)
                 yield cv2.resize(im[min_y:max_y, min_x:max_x], (person_w, person_h)), True
+
     def __len__(self):
         return len(self.images)
+
     def __add__(self, other):
         new = Dataset([])
         new.images.extend(self.images)
         new.images.extend(other.images)
         return new
+
     def __iadd__(self, other):
         self.images.extend(other.images)
+
     def shuffle(self):
         random.shuffle(self.images)
+
     def balance(self):
         '''
         Orders the images so that they alternate between positive and negative images.
@@ -181,11 +192,13 @@ class Dataset:
         self.images = new_image_list
 
         return positive_stack, negative_stack
+
     @property
     def num_negative_examples(self):
         if any(map(lambda x: type(x[3]) is not list, self.images)):
             raise Exception('BBOX type error!')
         return sum(map(lambda x: x[3]==[], self.images))
+
     @property
     def num_positive_examples(self):
         if any(map(lambda x: type(x[3]) is not list, self.images)):
@@ -205,6 +218,9 @@ class Dataset:
 
 class DatasetGroup:
     def __init__(self, test, train, validation=None):
+        '''
+        test, train and validation are all of type Dataset
+        '''
         if type(test) is not Dataset:
              # Python has duck typing, so test doesn't necessarily need to subclass from Dataset
             print('Passed a non-dataset object (ensure the test object implements the methods of dataset!)')
@@ -217,18 +233,22 @@ class DatasetGroup:
         self.test = test
         self.train = train
         self.validation = validation
+
     def __add__(self, other):
         return DatasetGroup(self.test + other.test, self.train + other.train)
+
     def __iadd__(self, other):
         self.test += other.test
         self.train += other.train
         if self.validation is not None and other.validation is not None:
             self.validation += other.validation
+
     def shuffle(self):
         self.test.shuffle()
         self.train.shuffle()
         if self.validation is not None:
             self.validation.shuffle()
+
     def balance(self):
         self.test.balance()
         self.train.balance()
