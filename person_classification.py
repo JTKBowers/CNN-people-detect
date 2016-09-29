@@ -39,6 +39,7 @@ if __name__ == '__main__':
           loadZurich('/mnt/data/Datasets/pedestrians/zurich')
 
     combined_dataset.train.generate_negative_examples()
+    combined_dataset.test.generate_negative_examples()
     combined_dataset.shuffle()
     combined_dataset.balance()
 
@@ -46,8 +47,10 @@ if __name__ == '__main__':
     train_neg = combined_dataset.train.num_negative_examples
     print(len(combined_dataset.train), 'training examples ({},{}).'.format(train_pos, train_neg))
     print(len(combined_dataset.test), 'testing examples ({},{}).'.format(combined_dataset.test.num_positive_examples, combined_dataset.test.num_negative_examples))
+
     nn_im_w = 64
     nn_im_h = 160
+
     with tf.Session() as sess:
         model = PersonModel(sess)
         model.build_graph(nn_im_w, nn_im_h)
@@ -61,6 +64,4 @@ if __name__ == '__main__':
         print("test accuracy %g" % test_accuracy)
         print("Test confusion matrix:", confusion_matrix)
 
-        # save model:
-        # Weights
         model.save('out/')
