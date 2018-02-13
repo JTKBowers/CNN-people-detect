@@ -1,4 +1,10 @@
-# CNN people detection
+# [DEPRECATED] CNN people detection
+## DO NOT USE
+This was a university project, and should not be used for any real purpose. Much better alternatives are:
+- [YOLO](https://pjreddie.com/darknet/yolo/)
+- [Detectron](https://github.com/facebookresearch/Detectron)
+
+
 ## About
 This project uses a simple convolutional neural network (CNN) to improve the performance of a HOG detector at detecting pedestrians.
 
